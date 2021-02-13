@@ -1,12 +1,15 @@
 const ytdl = require('ytdl-core');
 const ytSearch = require('yt-search');
 
+let timer;
+
+
 //Global queue for your bot. Every server will have a key and value pair in this map. { guild.id, queue_constructor{} }
 const queue = new Map();
 
 module.exports = {
     name: 'play',
-    aliases: ['skip', 'stop',], //We are using aliases to run the skip and stop command follow this tutorial if lost: https://www.youtube.com/watch?v=QBUJ3cdofqc
+    aliases: ['skip', 'stop', 'shuffle', 'loop', 'queue'], //We are using aliases to run the skip and stop command follow this tutorial if lost: https://www.youtube.com/watch?v=QBUJ3cdofqc
     cooldown: 0,
     description: 'Advanced music bot',
     async execute(client, message, cmd, args, Discord){
@@ -53,7 +56,8 @@ module.exports = {
                     voice_channel: voice_channel,
                     text_channel: message.channel,
                     connection: null,
-                    songs: []
+                    songs: [],
+                    loop: false,
                 }
                 
                 //Add our key and value pair into the global queue. We then use this to get our server queue.
@@ -78,6 +82,9 @@ module.exports = {
 
         else if(cmd === 'skip') skip_song(message, server_queue);
         else if(cmd === 'stop') stop_song(message, server_queue);
+        else if(cmd === 'shuffle') shuffle_song(message, server_queue);
+        else if(cmd === 'loop') loop_song(message, server_queue);
+        else if(cmd === 'queue') queue_song(message, server_queue);
     }
     
 }
@@ -94,7 +101,10 @@ const video_player = async (guild, song) => {
     const stream = ytdl(song.url, { filter: 'audioonly' });
     song_queue.connection.play(stream, { seek: 0, volume: 0.5 })
     .on('finish', () => {
-        song_queue.songs.shift();
+        if (song_queue.loop){
+            song_queue.songs.push(song_queue.songs[0])
+            song_queue.songs.shift()
+        }
         video_player(guild, song_queue.songs[0]);
     });
     await song_queue.text_channel.send(`🎶 Now playing **${song.title}**`)
@@ -112,4 +122,27 @@ const stop_song = (message, server_queue) => {
     if (!message.member.voice.channel) return message.channel.send('You need to be in a channel to execute this command!');
     server_queue.songs = [];
     server_queue.connection.dispatcher.end();
+}
+
+const loop_song = (message, server_queue) => {
+    if (!message.member.voice.channel) return message.channel.send('You need to be in a channel to execute this command!');
+    server_queue.loop = !server_queue.loop;
+
+    return message.channel.send(`I have now ${server_queue.loop ? `**Enabled**` : `**Disabled**`} looping!`);
+}
+
+const queue_song = (message, server_queue) => {
+    if (!message.member.voice.channel) 
+        return message.channel.send('You need to be in a channel to execute this command!');
+    if(!server_queue){
+        return message.channel.send(`There are no songs in queue 😔`);
+    }
+    let nowPlaying = server_queue.songs[0];
+    let qMsg = `Now playing: ${nowPlaying.title}\n------------------------------------------------------------------------------------------------------------------------------\n`
+
+    for(var i = 1; i < server_queue.songs.length; i++){
+        qMsg += `${i}. ${server_queue.songs[i].title}\n`
+    }
+
+    message.channel.send('```' + qMsg + 'Requested by: ' + message.author.username + '```');
 }
