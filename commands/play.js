@@ -104,6 +104,8 @@ const video_player = async (guild, song) => {
         if (song_queue.loop){
             song_queue.songs.push(song_queue.songs[0])
             song_queue.songs.shift()
+        } else {
+            song_queue.songs.shift()
         }
         video_player(guild, song_queue.songs[0]);
     });
@@ -124,7 +126,7 @@ const stop_song = (message, server_queue) => {
     server_queue.connection.dispatcher.end();
 }
 
-const loop_song = (message, server_queue) => {
+const loop_song = (message, server_queue, args) => {
     if (!message.member.voice.channel) return message.channel.send('You need to be in a channel to execute this command!');
     server_queue.loop = !server_queue.loop;
 
