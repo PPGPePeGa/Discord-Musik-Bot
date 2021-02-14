@@ -9,7 +9,7 @@ const queue = new Map();
 
 module.exports = {
     name: 'play',
-    aliases: ['skip', 'stop', 'shuffle', 'loop', 'queue'], //We are using aliases to run the skip and stop command follow this tutorial if lost: https://www.youtube.com/watch?v=QBUJ3cdofqc
+    aliases: ['skip', 'next', 'stop', 'leave', 'shuffle', 'loop', 'queue', 'pause', 'resume',], //We are using aliases to run the skip and stop command follow this tutorial if lost: https://www.youtube.com/watch?v=QBUJ3cdofqc
     cooldown: 0,
     description: 'Advanced music bot',
     async execute(client, message, cmd, args, Discord){
@@ -80,11 +80,13 @@ module.exports = {
             }
         }
 
-        else if(cmd === 'skip') skip_song(message, server_queue);
-        else if(cmd === 'stop') stop_song(message, server_queue);
+        else if(cmd === 'skip', 'next') skip_song(message, server_queue);
+        else if(cmd === 'stop', 'leave') stop_song(message, server_queue);
         else if(cmd === 'shuffle') shuffle_song(message, server_queue);
         else if(cmd === 'loop') loop_song(message, server_queue);
         else if(cmd === 'queue') queue_song(message, server_queue);
+        else if(cmd === 'pause') pause_song(message, server_queue);
+        else if(cmd === 'resume') resume_song(message, server_queue);
     }
     
 }
@@ -147,4 +149,27 @@ const queue_song = (message, server_queue) => {
     }
 
     message.channel.send('```' + qMsg + 'Requested by: ' + message.author.username + '```');
+}
+
+const pause_song = (message, server_queue) => {
+    if (!message.member.voice.channel) 
+        return message.channel.send('You need to be in a channel to execute this command!');
+    if(!server_queue){
+        return message.channel.send(`There are no songs in queue 😔`);
+    }
+    if(server_queue.connection.dispatcher.paused)
+        return message.channel.send("The song is already paused!");
+    server_queue.connection.dispatcher.pause();
+    message.channel.send("The song has been paused!");
+}
+
+const resume_song = (message, server_queue) => {
+    if(!server_queue.connection)
+        return message.channel.send("There is no music currently playing!");
+    if(!message.member.voice.channel)
+        return message.channel.send("You are not in the voice channel!");
+    if(server_queue.connection.dispatcher.resumed)
+        return message.channel.send("The song is already playing!");
+    server_queue.connection.dispatcher.resume();
+    message.channel.send("The song has been resumed!");
 }
