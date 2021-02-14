@@ -1,5 +1,6 @@
 const ytdl = require('ytdl-core');
 const ytSearch = require('yt-search');
+const { length } = require('ffmpeg-static');
 
 let timer;
 
@@ -9,7 +10,7 @@ const queue = new Map();
 
 module.exports = {
     name: 'play',
-    aliases: ['skip', 'next', 'stop', 'leave', 'shuffle', 'loop', 'queue', 'pause', 'resume',], //We are using aliases to run the skip and stop command follow this tutorial if lost: https://www.youtube.com/watch?v=QBUJ3cdofqc
+    aliases: ['skip', 'stop', 'shuffle', 'loop', 'queue', 'pause', 'resume', 'shuffle',], //We are using aliases to run the skip and stop command follow this tutorial if lost: https://www.youtube.com/watch?v=QBUJ3cdofqc
     cooldown: 0,
     description: 'Advanced music bot',
     async execute(client, message, cmd, args, Discord){
@@ -80,13 +81,14 @@ module.exports = {
             }
         }
 
-        else if(cmd === 'skip', 'next') skip_song(message, server_queue);
-        else if(cmd === 'stop', 'leave') stop_song(message, server_queue);
+        else if(cmd === 'skip') skip_song(message, server_queue);
+        else if(cmd === 'stop') stop_song(message, server_queue);
         else if(cmd === 'shuffle') shuffle_song(message, server_queue);
         else if(cmd === 'loop') loop_song(message, server_queue);
         else if(cmd === 'queue') queue_song(message, server_queue);
         else if(cmd === 'pause') pause_song(message, server_queue);
         else if(cmd === 'resume') resume_song(message, server_queue);
+        else if(cmd === 'shuffle') shuffle_song(message, server_queue, server_queue.songs,);
     }
     
 }
@@ -172,4 +174,22 @@ const resume_song = (message, server_queue) => {
         return message.channel.send("The song is already playing!");
     server_queue.connection.dispatcher.resume();
     message.channel.send("The song has been resumed!");
+}
+
+const shuffle_song = (message, server_queue,) => {
+    if(!server_queue.connection)
+        return message.channel.send("There is no music currently playing!");
+    if(!message.member.voice.channel)
+        return message.channel.send("You are not in the voice channel!");
+
+    for (let i = server_queue.songs.length - 1; i > 0; i--){
+        let j = Math.round(Math.random() * (i + 1));
+        while(j == 0)
+            j  = Math.round(Math.random() * (i + 1));
+        const temp = server_queue.songs[i];
+        server_queue.songs[i] = server_queue.songs[j];
+        server_queue.songs[j] = temp;
+    }
+    message.channel.send("I\'ve shuffled the queue!");
+    return server_queue.songs;
 }
